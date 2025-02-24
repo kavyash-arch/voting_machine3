@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Score Idea</title>
+</head>
+<body>
+    <h1>Score Idea</h1>
+    <form method="POST" action="{{ url_for('score_idea') }}">
+        <!-- Loop through each idea to show scoring options -->
+        {% for idea in ideas %}
+        <div>
+            <label for="score_{{ idea.id }}">{{ idea.name }} (ID: {{ idea.id }})</label>
+            <input type="hidden" name="idea_id" value="{{ idea.id }}">  <!-- Hidden input for idea_id -->
+            <input type="number" id="score_{{ idea.id }}" name="score_{{ idea.id }}" min="0" max="5" placeholder="Score (0-5)" required>
+        </div>
+        {% endfor %}
+        <button type="submit">Submit Scores</button>
+    </form>
+</body>
+</html>

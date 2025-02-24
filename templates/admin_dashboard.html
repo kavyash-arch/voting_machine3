@@ -1,0 +1,44 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="admin_dashboard_container">
+        <h1>Admin Dashboard</h1>
+        <h3>Idea Scores</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Idea</th>
+                    <th>Judge Score</th>
+                    <th>Audience Score</th>
+                    <th>Total Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for idea in ideas %}
+                    <tr>
+                        <td>{{ idea.name }}</td>
+                        <td>{{ idea.score_judge }}</td>
+                        <td>{{ idea.score_audience }}</td>
+                        <td>{{ idea.total_score }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h2>Winner</h2>
+        {% if winner %}
+            <p><strong>{{ winner.name }}</strong> is the winner with a total score of <strong>{{ winner.total_score }}</strong> 🎉</p>
+        {% else %}
+            <p>No winner yet.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

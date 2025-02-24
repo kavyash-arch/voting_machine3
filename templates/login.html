@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+
+    <div class="login-container">
+        <h2>Voting Machine</h2>
+        
+        <!-- Flash messages for feedback -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul>
+                    {% for category, message in messages %}
+                        <li class="flash-message {{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Login form -->
+        <form action="{{ url_for('send_otp') }}" method="POST">
+            <label for="email">Email</label>
+            <input type="email" name="email" id="email" placeholder="Enter your email" required>
+
+            <label for="role">Role</label>
+            <select name="role" id="role" required>
+                <option value="audience">Audience</option>
+                <option value="judge">Judge</option>
+                <option value="admin">Admin</option>
+            </select>
+
+            <input type="submit" value="Send OTP">
+        </form>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Judge Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="judge_dashboard_container">
+    <h1>Judge Dashboard</h1>
+    <h3>Score the Ideas (Max 50 points per idea)</h3>
+
+    <form method="POST" action="{{ url_for('judge_dashboard') }}">
+        <div class="grid-container">
+            {% for idea in ideas %}
+                <div class="grid-item">
+                    <p>{{ idea.name }}</p>
+                    <input type="hidden" name="idea_id" value="{{ idea.id }}">
+                    <label for="score_{{ idea.id }}">Score (0-50):</label>
+                    <input type="number" name="score_{{ idea.id }}" id="score_{{ idea.id }}" 
+                           min="0" max="50" value="{{ idea.score_judge }}" required>
+                </div>
+            {% endfor %}
+        </div>
+        <button type="submit">Submit Scores</button>
+    </form>
+</div>
+</body>
+</html>
