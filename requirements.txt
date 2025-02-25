@@ -1,6 +1,6 @@
-Flask==2.2.3
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
 Flask-Mail==0.9.1
-Flask-SQLAlchemy==2.5.1
-pymysql==1.0.2
-gunicorn
-Werkzeug==2.0.3
+gunicorn==21.2.0
+pymysql==1.1.0
+smtplib==0.1.0
