@@ -3,3 +3,4 @@ Flask-Mail==0.9.1
 Flask-SQLAlchemy==2.5.1
 pymysql==1.0.2
 gunicorn
+Werkzeug==2.0.3
