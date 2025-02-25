@@ -1,18 +1,48 @@
 import pymysql
 pymysql.install_as_MySQLdb()
 
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
-
+from flask_mail import Mail, Message
+import os
 import random
 import string
-import win32com.client
 import time
-import pythoncom
 from datetime import datetime, timedelta
+
+import smtplib
+
+EMAIL = os.environ.get("MAIL_USERNAME")
+PASSWORD = os.environ.get("MAIL_PASSWORD")
+
+try:
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.starttls()
+    server.login(EMAIL, PASSWORD) 
+    #server.login('your_email@gmail.com', 'your_app_password')
+    print("✅ SMTP Connection Successful!")
+    server.quit()
+except Exception as e:
+    print(f"❌ SMTP Connection Failed: {e}")
+
 
 app = Flask(__name__)
 app.secret_key = 'hello123'  # Use a strong secret key in production
+# 🔹 **Flask-Mail Configuration (Set these values in Render)**
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'  # Change if using another provider
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')  # Set in Render
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')  # Set in Render
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME') or "noreply@example.com"
+
+#app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
+#app.config['MAIL_USERNAME'] = 'ingawalevaishnavi8@gmail.com'
+#app.config['MAIL_PASSWORD'] = 'xyzn wxuf atep znqu'  # Use App Password
+
+
+mail = Mail(app)  # Initialize Flask-Mail
 
 # Configuring SQLAlchemy with MYSQL database
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:11111@localhost/voting_db'
@@ -42,31 +72,29 @@ otp_storage = []
 def generate_otp():
     return ''.join(random.choices(string.digits, k=6))  # Generates a 6-digit OTP
 
-# Function to send OTP email using Outlook
+# 🔹 **Function to Send Email using Flask-Mail**
 def send_mail(email, subject, message):
     try:
-        # Initialize COM before creating an Outlook application instance
-        pythoncom.CoInitialize()
-        
-        # Create an instance of Outlook
-        outlook = win32com.client.Dispatch("Outlook.Application")
-        mail_item = outlook.CreateItem(0)  # 0: MailItem
-
-        # Set the properties of the email
-        mail_item.Subject = subject
-        mail_item.Body = message
-        mail_item.To = email
-
-        # Save the message to Sent Items (debugging step)
-        mail_item.Save()
-
-        # Force sending the email
-        mail_item.Send()
-
-        print("Email sent successfully")
-
+        msg = Message(
+            subject=subject,
+            recipients=[email],  # Send to any user (Admin, Judge, Audience)
+            body=message,
+            sender=app.config['MAIL_DEFAULT_SENDER']  # Explicit sender
+        )
+        mail.send(msg)
+        print(f"✅ Email sent successfully to {email}!")
     except Exception as e:
-        print(f"Error sending email: {e}")
+        print(f"❌ Error sending email to {email}: {e}")
+
+@app.route('/test_email/<role>')
+def test_email(role):
+    user = User.query.filter_by(role=role).first()
+    if user:
+        send_mail(user.email, f"Test Email for {role}", f"Hello {role}, this is a test email.")
+        return f"✅ Test email sent to {user.email}!"
+    return "❌ No user found for this role."
+
+
 
 # Helper function to calculate total scores
 def calculate_total_scores():
@@ -101,9 +129,11 @@ def send_otp():
             otp_storage.append({"email": email, "otp": otp, "expiry_time": expiry_time})
 
             # Send OTP via email
-            subject = "Your OTP Code"
-            message = f"Your OTP code is: {otp}"
-            send_mail(email, subject, message)
+           # subject = "Your OTP Code"
+           # message = f"Your OTP code is: {otp}"
+            #send_mail(email, subject, message)
+            print(f"📩 Sending OTP {otp} to {email}")  # Debugging
+            send_mail(email, "Your OTP Code", f"Your OTP code is: {otp}")
 
             flash(f"OTP sent to {email}. Please check your email.", "success")
             return redirect(url_for('otp_verification', email=email))
@@ -156,7 +186,14 @@ def judge_dashboard():
         for idea in Idea.query.all():
             score = request.form.get(f"score_{idea.id}")
             if score:
-                idea.score_judge = int(score)
+               # idea.score_judge = int(score)
+               score = int(score)
+                # Ensure score is within 0-100 and a multiple of 5
+               if 0 <= score <= 100 and score % 5 == 0:
+                    idea.score_judge = score
+               else:
+                    flash(f"Invalid score for Idea {idea.id}. Please enter a multiple of 5 between 0 and 100.", "danger")
+                    return redirect(url_for('judge_dashboard'))  # Reload page on error
         db.session.commit()  # Save changes to the database
         flash("Scores submitted successfully! Thank you for your participation.", "success")
         session.pop('user', None)  # Log out the user
@@ -171,7 +208,14 @@ def audience_dashboard():
         for idea in Idea.query.all():
             score = request.form.get(f"score_{idea.id}")
             if score:
-                idea.score_audience = int(score)
+                #idea.score_audience = int(score)
+                score = int(score)
+                # Ensure score is within 0-50 and a multiple of 5
+                if 0 <= score <= 50 and score % 5 == 0:
+                    idea.score_audience = score
+                else:
+                    flash(f"Invalid score for Idea {idea.id}. Please enter a multiple of 5 between 0 and 50.", "danger")
+                    return redirect(url_for('audience_dashboard'))  # Reload the page
         db.session.commit()  # Save changes to the database
         flash("Scores submitted successfully! Thank you for your participation.", "success")
         session.pop('user', None)  # Log out the user
@@ -182,7 +226,6 @@ def audience_dashboard():
 @app.route('/admin_dashboard')
 def admin_dashboard():
     calculate_total_scores() 
-    ideas = Idea.query.all()
     winner = Idea.query.order_by(Idea.total_score.desc()).first() # Ensure total scores are calculated
     db.session.commit()
     return render_template('admin_dashboard.html', ideas=Idea.query.all(), winner=winner)
@@ -198,35 +241,25 @@ def result():
 def thank_you():
     return render_template('thank_you.html')
 
-# Route to add users to the database (admin, judge, and audience)
+# **Add Users (Admin, Judge, Audience)**
 @app.route('/add_users')
 def add_users():
-    # Add admin user
-    admin_user = User.query.filter_by(email="vaishnaviingawale1@gmail.com").first()
-    if not admin_user:
-        admin_user = User(email="vaishnaviingawale1@gmail.com", role="admin")
-        db.session.add(admin_user)
-
-    # Add judge user
-    judge_user = User.query.filter_by(email="vingawale05@gmail.com").first()
-    if not judge_user:
-        judge_user = User(email="vingawale05@gmail.com", role="judge")
-        db.session.add(judge_user)
-
-    # Add audience user
-    audience_user = User.query.filter_by(email="vaishnai@amdocs.com").first()
-    if not audience_user:
-        audience_user = User(email="vaishnai@amdocs.com", role="audience")
-        db.session.add(audience_user)
-
+    users = [
+        {"email": "vaishnai@amdocs.com", "role": "admin"},
+        {"email": "ingawalevaishnavi8@gmail.com", "role": "judge"},
+        {"email": "vaishnaviingawale1@gmail.com", "role": "audience"}
+    ]
+    for user in users:
+        if not User.query.filter_by(email=user["email"]).first():
+            new_user = User(email=user["email"], role=user["role"])
+            db.session.add(new_user)
+            send_mail(new_user.email, "Welcome!", f"Hello {new_user.role}, you have been added to the system.")
     db.session.commit()
-    flash("Users added successfully!", "success")
+    flash("✅ Users added!", "success")
     return redirect(url_for('home'))
-
 
 if __name__ == '__main__':
     # Create tables before starting the app
     with app.app_context():
         db.create_all()  # Create database tables
     app.run(debug=True)
-

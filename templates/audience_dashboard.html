@@ -12,7 +12,7 @@
         <h1>Audience Dashboard</h1>
         <h3>Vote for the Ideas (Max 100 points per idea)</h3>
 
-        <form method="POST" action="{{ url_for('audience_dashboard') }}">
+        <!--<form method="POST" action="{{ url_for('audience_dashboard') }}">
             <div class="grid-container">
                 {% for idea in ideas %}
                     <div class="grid-item">
@@ -25,7 +25,20 @@
                 {% endfor %}
             </div>
             <button type="submit">Submit Scores</button>
+        </form>-->
+        <form method="POST">
+            {% for idea in ideas %}
+                <label for="score_{{ idea.id }}">Score for Idea {{ idea.name }}:</label>
+                <select name="score_{{ idea.id }}" required>
+                    {% for score in range(0, 55, 5) %}  <!-- Generates 0, 5, 10, ..., 50 -->
+                        <option value="{{ score }}">{{ score }}</option>
+                    {% endfor %}
+                </select>
+                <br>
+            {% endfor %}
+            <button type="submit">Submit Scores</button>
         </form>
+        
     </div>
 </body>
 </html>
