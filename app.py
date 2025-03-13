@@ -15,7 +15,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'hello123')  # Secure key
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Configuring MySQL database
-DATABASE_URL = getenv('DATABASE_URL', 'mysql+pymysql://root:11111@localhost:3306/voting_db')
+DATABASE_URL = getenv('DATABASE_URL', 'mysql+pymysql://root:11111@127.0.0.1:3306/voting_db')
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 db = SQLAlchemy(app)
 #db_url = os.environ.get('DATABASE_URL', 'mysql+pymysql://root:11111@localhost/voting_db')
