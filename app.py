@@ -6,6 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO, emit
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 import os
+from os import getenv
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'hello123')  # Secure key
@@ -14,11 +15,13 @@ app.secret_key = os.environ.get('SECRET_KEY', 'hello123')  # Secure key
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Configuring MySQL database
-db_url = os.environ.get('DATABASE_URL', 'mysql+pymysql://root:11111@localhost/voting_db')
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
+DATABASE_URL = getenv('DATABASE_URL', 'mysql+pymysql://root:11111@localhost:3306/voting_db')
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 db = SQLAlchemy(app)
+#db_url = os.environ.get('DATABASE_URL', 'mysql+pymysql://root:11111@localhost/voting_db')
+#app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+#app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 login_manager = LoginManager(app)
 login_manager.login_view = 'home'
 
