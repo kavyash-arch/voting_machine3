@@ -17,18 +17,9 @@ app.secret_key = getenv("SECRET_KEY", "hello123")  # Use a strong secret key in 
 # Enable Flask-SocketIO with CORS to allow mobile access
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+db_url = "postgresql://votinguser:jCjWNVbhrboEPfRAueVohXZdNqJR7kB3@dpg-d2pbkp3e5dus73avlph0-a:5432/votingdb_p5a4"
 
-if DATABASE_URL:
-    # Render deployment DB
-    if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-    app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
-else:
-    # Local Postgres DB
-    LOCAL_DB_URL = "postgresql://root:11111@localhost:5432/voting_db"
-    app.config["SQLALCHEMY_DATABASE_URI"] = LOCAL_DB_URL
-
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "poolclass": NullPool
@@ -402,10 +393,8 @@ def handle_score_submission(data):
 
 
 
-if __name__ == '__main__':
-    # Create tables before starting the app
+if __name__ == "__main__":
     with app.app_context():
-        db.create_all()  # Create database tables
-    #app.run(debug=True)
-    socketio.run(app, debug=True, port=5000)
+        db.create_all()
+    socketio.run(app, host="0.0.0.0", port=int(getenv("PORT", 5000)), debug=True)
 
