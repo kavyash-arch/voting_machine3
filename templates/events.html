@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Events</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <style>
+    body {
+      background: url("{{ url_for('static', filename='voting-security.jpg') }}") no-repeat center center fixed;
+      background-size: cover;
+      font-family: Arial, sans-serif;
+      color: #000;
+      text-align: center;
+    }
+
+    .event_container {
+      margin: 50px auto;
+      max-width: 800px;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 12px;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.2);
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
+    h3 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .event_card {
+      padding: 15px;
+      margin: 15px 0;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #f9f9f9;
+      text-align: left;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .event_card h2 {
+      margin: 0 0 10px;
+      font-size: 1.3rem;
+    }
+
+    .status {
+      font-weight: bold;
+    }
+
+    .status.active {
+      color: green;
+    }
+
+    .status.inactive {
+      color: red;
+    }
+
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background: #007bff;
+      color: white;
+      font-size: 14px;
+    }
+
+    button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="event_container">
+    <h1>Available Events</h1>
+
+    {% if role == "admin" %}
+      <h3>Set Active Event</h3>
+    {% else %}
+      <h3>Select an Active Event to Continue</h3>
+    {% endif %}
+
+    {% for event in events %}
+      <div class="event_card">
+        <h2>{{ event.name }}</h2>
+        <p class="status {% if event.is_active %}active{% else %}inactive{% endif %}">
+          {% if event.is_active %} Active {% else %} Inactive {% endif %}
+        </p>
+
+        {% if role == "admin" %}
+          <a href="{{ url_for('set_active', event_id=event.id) }}">
+            <button>
+              {% if event.is_active %} Active {% else %} Set Active {% endif %}
+            </button>
+          </a>
+        {% else %}
+          {% if event.is_active %}
+            <a href="{{ url_for('join_event', event_id=event.id) }}">
+              <button>Join</button>
+            </a>
+          {% else %}
+            <button disabled>Not Active</button>
+          {% endif %}
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</body>
+</html>

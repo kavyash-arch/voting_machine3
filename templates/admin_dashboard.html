@@ -1,73 +1,171 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <style>
+    body {
+      background: url("{{ url_for('static', filename='voting-security.jpg') }}") no-repeat center center fixed;
+      background-size: cover;
+      font-family: Arial, sans-serif;
+      color: #000;
+      text-align: center;
+    }
+
+    .container {
+      margin: 30px auto;
+      max-width: 1100px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 12px;
+      box-shadow: 0px 4px 12px rgba(0,0,0,0.2);
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-size: 2.2rem;
+      text-align: center;
+      color: #222;
+    }
+
+    h2 {
+      margin: 25px 0 15px;
+      font-size: 1.6rem;
+      text-align: center;
+      color: #222;
+    }
+
+    .nav-buttons {
+      margin-bottom: 25px;
+    }
+
+    .nav-buttons button {
+      margin: 0 10px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      background: #007bff;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .nav-buttons button:hover {
+      background: #0056b3;
+    }
+
+    table {
+      width: 100%;
+      margin: 20px auto;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0px 2px 6px rgba(0,0,0,0.15);
+    }
+
+    table th, table td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+
+    table th {
+      background: #f4f4f4;
+      font-weight: bold;
+    }
+
+    .status-active {
+      color: green;
+      font-weight: bold;
+    }
+
+    .status-inactive {
+      color: red;
+      font-weight: bold;
+    }
+
+    .winner {
+      margin-top: 20px;
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #222;
+    }
+
+    .highlight {
+      color: #007bff;
+    }
+  </style>
 </head>
 <body>
-    <div class="admin_dashboard_container">
-    
-        <h1>Idea Scores</h1>
+  <div class="container">
 
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-        <script>
-            var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
-        
-            socket.on('update_scores', function(data) {
-                let scores = data.scores;
-                let winner = data.winner;
-        
-                for (const [ideaId, ideaData] of Object.entries(scores)) {
-                    document.getElementById(`judge_score_${ideaId}`).innerText = ideaData.judge;
-                    document.getElementById(`audience_score_${ideaId}`).innerText = ideaData.audience;
-                    document.getElementById(`total_score_${ideaId}`).innerText = ideaData.total;
-                }
-        
-                // Update Winner
-                if (winner && winner.name) {
-                    document.getElementById("winner_name").innerText = winner.name;
-                    document.getElementById("winner_score").innerText = winner.score;
-                }
-            });
-        </script>
-    
-        
+    <!-- Navigation -->
+    <div class="nav-buttons">
+      <a href="{{ url_for('events') }}"><button>Events</button></a>
+      <a href="{{ url_for('dashboard') }}"><button>Idea Scores</button></a>
+    </div>
 
-<table>
-    <thead>
+    <!-- Events Section -->
+    <h2>Available Events</h2>
+    <table>
+      <thead>
         <tr>
-            <th>Idea</th>
-            <th>Judge Score</th>
-            <th>Audience Score</th>
-            <th>Total Score</th>
+          <th>Event Name</th>
+          <th>Status</th>
+          <th>Action</th>
         </tr>
-    </thead>
-    <tbody>
-        {% for idea in ideas %}
+      </thead>
+      <tbody>
+        {% for event in events %}
         <tr>
-            <td>{{ idea.name }}</td>
-            <td id="judge_score_{{ idea.id }}">{{ idea.score_judge }}</td>
-            <td id="audience_score_{{ idea.id }}">{{ idea.score_audience }}</td>
-            <td id="total_score_{{ idea.id }}">{{ idea.total_score }}</td>
+          <td>{{ event.name }}</td>
+          <td>
+            {% if event.is_active %}
+              <span class="status-active">Active</span>
+            {% else %}
+              <span class="status-inactive">Inactive</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('set_active', event_id=event.id) }}">
+              <button>{% if event.is_active %}Active{% else %}Set Active{% endif %}</button>
+            </a>
+          </td>
         </tr>
         {% endfor %}
-    </tbody>
-</table>
+      </tbody>
+    </table>
 
-<h2>Winner</h2>
-<p><strong id="winner_name">
-    {% if winner %}{{ winner.name }}
-    {% else %}No winner yet{% endif %}</strong> 
-     is the winner with a total score of <strong id="winner_score">
-    {% if winner %}{{ winner.total_score }}{% else %}0{% endif %}</strong>🎉.</p>
+    <!-- Idea Scores Section -->
+    <h2>Idea Scores</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Idea</th>
+          <th>Judge Score</th>
+          <th>Audience Score</th>
+          <th>Total Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for idea in ideas %}
+        <tr>
+          <td>{{ idea.name }}</td>
+          <td>{{ idea.judge_score }}</td>
+          <td>{{ idea.audience_score }}</td>
+          <td>{{ idea.total_score }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
 
-       
+    <!-- Winner Section -->
+    <div class="winner">
+      Winner: <span class="highlight">{{ winner.name }}</span> with score <span class="highlight">{{ winner.total_score }}</span> 🎉
     </div>
+  </div>
 </body>
 </html>
-
-
-
