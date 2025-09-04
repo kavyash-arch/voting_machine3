@@ -281,6 +281,27 @@ def join_event(event_id):
         return redirect(url_for('dashboard'))
     else:
         return redirect(url_for('home'))
+    
+# Create Event Route (Admin only)
+@app.route('/create_event', methods=['POST'])
+@login_required
+def create_event():
+    if current_user.role != "admin":
+        flash("Unauthorized action", "danger")
+        return redirect(url_for('dashboard'))
+
+    event_id = request.form['event_id']
+    event_name = request.form['event_name']
+    is_active = True if request.form['is_active'] == "1" else False
+
+    new_event = Event(id=event_id, name=event_name, is_active=is_active)
+    db.session.add(new_event)
+    db.session.commit()
+
+    flash("Event created successfully!", "success")
+
+    # redirect back to dashboard (list tab will be opened by JS)
+    return redirect(url_for('dashboard'))
 
 
 

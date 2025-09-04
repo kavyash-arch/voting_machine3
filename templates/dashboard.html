@@ -3,188 +3,178 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard</title>
+  <title>Admin Dashboard</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background: #f4f7fb;
-    }
-
-    .dashboard-container {
-      max-width: 1100px;
-      margin: auto;
-      background: #fff;
-      padding: 25px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-
-    h2 {
-      color: #333;
-      margin-top: 20px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-      background: #fff;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0px 2px 6px rgba(0,0,0,0.1);
-    }
-
-    table th, table td {
-      padding: 12px;
-      border: 1px solid #ddd;
-      text-align: center;
-    }
-
-    table th {
-      background: #f8f9fa;
-      font-weight: bold;
-    }
-
-    .form-inline {
+    /* Tab navigation styling */
+    .tab-container {
       display: flex;
-      gap: 15px;
-      margin-top: 20px;
+      justify-content: center;
+      margin-bottom: 20px;
     }
-
-    .form-inline input, .form-inline select {
-      flex: 1;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-
-    .form-inline button {
-      padding: 10px 20px;
-      background: #28a745;
+    .tab-button {
+      background-color: #025373;
       color: white;
       border: none;
-      border-radius: 6px;
+      padding: 12px 20px;
+      margin: 0 5px;
+      border-radius: 5px;
       cursor: pointer;
-    }
-
-    .form-inline button:hover {
-      background: #218838;
-    }
-
-    .status-active { color: green; font-weight: bold; }
-    .status-inactive { color: red; font-weight: bold; }
-
-    .winner {
-      margin-top: 15px;
-      text-align: center;
-      font-size: 1.2rem;
       font-weight: bold;
-      color: #222;
+    }
+    .tab-button:hover {
+      background-color: #025E73;
+    }
+    .tab-button.active {
+      background-color: #037F8C;
+    }
+    .tab-content {
+      display: none;
+      background-color: rgba(255, 255, 255, 0.85);
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Toast popup */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: #28a745;
+      color: white;
+      padding: 15px 20px;
+      border-radius: 6px;
+      box-shadow: 0px 4px 8px rgba(0,0,0,0.2);
+      opacity: 0;
+      transition: opacity 0.5s ease-in-out;
+      z-index: 1000;
+    }
+    .toast.show {
+      opacity: 1;
+    }
+
+    h2, h3 {
+      font-family: "Play", serif;
+      color: #025373;
     }
   </style>
 </head>
 <body>
 
-  <div class="dashboard-container">
-    <h1 style="text-align:center; color:#003366;">Dashboard</h1>
+  <div class="admin_dashboard_container">
+    <h2>Admin Dashboard</h2>
+
+    <!-- Tab Navigation -->
+    <div class="tab-container">
+      <button class="tab-button active" onclick="openTab(event, 'create')">Create Event</button>
+      <button class="tab-button" onclick="openTab(event, 'list')">Event List</button>
+      <button class="tab-button" onclick="openTab(event, 'scores')">Idea Scores</button>
+    </div>
 
     <!-- 1. Create Event -->
-    {% if role == "admin" %}
-    <h2>Create New Event</h2>
-    <form class="form-inline" method="POST" action="{{ url_for('create_event') }}">
-      <input type="text" name="event_id" placeholder="Event ID" required>
-      <input type="text" name="event_name" placeholder="Event Name" required>
-      <select name="is_active">
-        <option value="1">Active</option>
-        <option value="0">Inactive</option>
-      </select>
-      <button type="submit">Create Event</button>
-    </form>
-    {% endif %}
+    <div id="create" class="tab-content active">
+      <h3>Create New Event</h3>
+      <form class="form-inline" method="POST" action="{{ url_for('create_event') }}">
+        <input type="text" name="event_id" placeholder="Event ID" required>
+        <input type="text" name="event_name" placeholder="Event Name" required>
+        <select name="is_active">
+          <option value="1">Active</option>
+          <option value="0">Inactive</option>
+        </select>
+        <input type="submit" value="Create Event">
+      </form>
+    </div>
 
     <!-- 2. Event List -->
-    <h2>Event List</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Event ID</th>
-          <th>Event Name</th>
-          <th>Status</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for event in events %}
-        <tr>
-          <td>{{ event.id }}</td>
-          <td>{{ event.name }}</td>
-          <td>
-            {% if event.is_active %}
-              <span class="status-active">Active</span>
-            {% else %}
-              <span class="status-inactive">Inactive</span>
-            {% endif %}
-          </td>
-          <td>
-            {% if role == "admin" %}
+    <div id="list" class="tab-content">
+      <h3>Event List</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Event ID</th>
+            <th>Event Name</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for event in events %}
+          <tr>
+            <td>{{ event.id }}</td>
+            <td>{{ event.name }}</td>
+            <td>
+              {% if event.is_active %}
+                <span class="status-active">Active</span>
+              {% else %}
+                <span class="status-inactive">Inactive</span>
+              {% endif %}
+            </td>
+            <td>
               <a href="{{ url_for('set_active', event_id=event.id) }}">
                 <button>{% if event.is_active %} Active {% else %} Set Active {% endif %}</button>
               </a>
-            {% else %}
-              {% if event.is_active %}
-                <a href="{{ url_for('join_event', event_id=event.id) }}">
-                  <button>Join</button>
-                </a>
-              {% else %}
-                <button disabled>Not Active</button>
-              {% endif %}
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
 
     <!-- 3. Idea Scores -->
-    <h2>Idea Scores</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Idea</th>
-          <th>Judge Score</th>
-          <th>Audience Score</th>
-          <th>Total Score</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for idea in ideas %}
-        <tr>
-          <td>{{ idea.name }}</td>
-          <td id="judge_score_{{ idea.id }}">{{ idea.score_judge }}</td>
-          <td id="audience_score_{{ idea.id }}">{{ idea.score_audience }}</td>
-          <td id="total_score_{{ idea.id }}">{{ idea.total_score }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div id="scores" class="tab-content">
+      <h3>Idea Scores</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Idea</th>
+            <th>Judge Score</th>
+            <th>Audience Score</th>
+            <th>Total Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for idea in ideas %}
+          <tr>
+            <td>{{ idea.name }}</td>
+            <td id="judge_score_{{ idea.id }}">{{ idea.score_judge }}</td>
+            <td id="audience_score_{{ idea.id }}">{{ idea.score_audience }}</td>
+            <td id="total_score_{{ idea.id }}">{{ idea.total_score }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
 
-    <div class="winner">
-      Winner: 
-      <span id="winner_name">
-        {% if winner %}{{ winner.name }}{% else %}No winner yet{% endif %}
-      </span> 
-      with score 
-      <span id="winner_score">
-        {% if winner %}{{ winner.total_score }}{% else %}0{% endif %}
-      </span> 🎉
+      <div class="winner">
+        Winner: 
+        <span id="winner_name">
+          {% if winner %}{{ winner.name }}{% else %}No winner yet{% endif %}
+        </span> 
+        with score 
+        <span id="winner_score">
+          {% if winner %}{{ winner.total_score }}{% else %}0{% endif %}
+        </span> 🎉
+      </div>
     </div>
   </div>
 
+  <!-- Toast container -->
+  <div id="toast" class="toast"></div>
+
   <script>
+    // ✅ Tab Switching
+    function openTab(evt, tabId) {
+      document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+      document.querySelectorAll(".tab-button").forEach(b => b.classList.remove("active"));
+      document.getElementById(tabId).classList.add("active");
+      evt.target.classList.add("active");
+    }
+
+    // ✅ Real-time score updates
     var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port);
     socket.on('update_scores', function(data) {
       let scores = data.scores;
@@ -199,6 +189,20 @@
           document.getElementById("winner_score").innerText = winner.score;
       }
     });
+
+
+
+
+
+    function showToast(msg, category) {
+      const toast = document.getElementById("toast");
+      toast.innerText = msg;
+      toast.style.background = category === "success" ? "#28a745" : "#dc3545";
+      toast.classList.add("show");
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 3000);
+    }
   </script>
 </body>
 </html>
