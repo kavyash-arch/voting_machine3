@@ -8,11 +8,14 @@ from flask_socketio import SocketIO, emit
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 import os
 from os import getenv
-from flask_mail import Mail, Message
 from sqlalchemy.pool import NullPool
+from flask import Flask
+from flask_mail import Mail, Message
 
 app = Flask(__name__)
 app.secret_key = getenv("SECRET_KEY", "hello123")  # Use a strong secret key in production
+
+
 
 # Enable Flask-SocketIO with CORS to allow mobile access
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -30,6 +33,15 @@ db = SQLAlchemy(app)
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'home'
+
+# ---------------- FLASK MAIL CONFIG ---------------- #
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'  # Replace with your SMTP server
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = getenv("MAIL_USERNAME", "shendekavya22@gmail.com")
+app.config['MAIL_PASSWORD'] = getenv("MAIL_PASSWORD", "djcz rghn rcxz pmwi")  # Or App Password
+
+mail = Mail(app)
 
 
 # Model for User (email and role)
@@ -59,17 +71,19 @@ class Event(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# ---------------- OTP SYSTEM ---------------- #
-otp_storage = {}
+def send_otp_email(email, otp):
+    try:
+        msg = Message(
+            subject="Your Voting OTP",
+            sender=app.config['MAIL_USERNAME'],
+            recipients=[email],
+            body=f"Hello,\n\nYour OTP for the voting app is: {otp}\nIt will expire in 15 minutes.\n\nThank you!"
+        )
+        mail.send(msg)
+        print(f"📩 OTP sent to {email} via email.")
+    except Exception as e:
+        print(f"❌ Failed to send OTP email: {e}")
 
-def generate_otp():
-    return ''.join(random.choices(string.digits, k=6))
-
-def is_otp_expired(stored_otp):
-    return not stored_otp or time.time() > stored_otp["expiry_time"]
-
-def send_otp_console(email, otp):
-    print(f"📩 OTP for {email}: {otp}", flush=True)
 
 # Helper function to calculate total scores
 def calculate_total_scores():
@@ -128,8 +142,8 @@ def send_otp():
     otp_storage[email] = {"otp": otp, "expiry_time": expiry_time, "role": role}
 
     # Console print instead of email
-    send_otp_console(email, otp)  
-    flash(f"OTP generated for {email}. Please check your console.", "success")
+    send_otp_email(email, otp)
+    flash(f"OTP sent to {email}. Please check your email.", "success")
     return redirect(url_for("otp_verification", email=email))
 
  
