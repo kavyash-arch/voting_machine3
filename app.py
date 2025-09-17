@@ -34,14 +34,39 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'home'
 
+# ---------------- OTP SYSTEM ---------------- #
+otp_storage = {}  # Store OTPs temporarily {email: {otp, expiry_time, role}}
+
+def generate_otp(length=6):
+    """Generate a numeric OTP of given length"""
+    return ''.join(random.choices(string.digits, k=length))
+
+def is_otp_expired(stored_otp):
+    """Check if OTP is expired"""
+    return not stored_otp or time.time() > stored_otp["expiry_time"]
+
 # ---------------- FLASK MAIL CONFIG ---------------- #
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'  # Replace with your SMTP server
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'  # Use your SMTP server
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = getenv("MAIL_USERNAME", "shendekavya22@gmail.com")
 app.config['MAIL_PASSWORD'] = getenv("MAIL_PASSWORD", "djcz rghn rcxz pmwi")  # Or App Password
 
 mail = Mail(app)
+
+def send_otp_email(email, otp):
+    """Send OTP via email using Flask-Mail"""
+    try:
+        msg = Message(
+            subject="Your Voting OTP",
+            sender=app.config['MAIL_USERNAME'],
+            recipients=[email],
+            body=f"Hello,\n\nYour OTP for the voting app is: {otp}\nIt will expire in 15 minutes.\n\nThank you!"
+        )
+        mail.send(msg)
+        print(f"📩 OTP sent to {email} via email.")
+    except Exception as e:
+        print(f"❌ Failed to send OTP email: {e}")
 
 
 # Model for User (email and role)
@@ -70,19 +95,6 @@ class Event(db.Model):
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
-
-def send_otp_email(email, otp):
-    try:
-        msg = Message(
-            subject="Your Voting OTP",
-            sender=app.config['MAIL_USERNAME'],
-            recipients=[email],
-            body=f"Hello,\n\nYour OTP for the voting app is: {otp}\nIt will expire in 15 minutes.\n\nThank you!"
-        )
-        mail.send(msg)
-        print(f"📩 OTP sent to {email} via email.")
-    except Exception as e:
-        print(f"❌ Failed to send OTP email: {e}")
 
 
 # Helper function to calculate total scores
